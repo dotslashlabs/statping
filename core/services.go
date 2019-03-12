@@ -55,6 +55,16 @@ func SelectService(id int64) *Service {
 	return nil
 }
 
+// SelectServiceLink returns a *core.Service from the service permalink
+func SelectServiceLink(permalink string) *Service {
+	for _, s := range Services() {
+		if s.Select().Permalink.String == permalink {
+			return s.(*Service)
+		}
+	}
+	return nil
+}
+
 // CheckinProcess runs the checkin routine for each checkin attached to service
 func (s *Service) CheckinProcess() {
 	checkins := s.AllCheckins()
@@ -104,12 +114,6 @@ func (c *Core) SelectAllServices(start bool) ([]*Service, error) {
 // reorderServices will sort the services based on 'order_id'
 func reorderServices() {
 	sort.Sort(ServiceOrder(CoreApp.Services))
-}
-
-// ToJSON will convert a service to a JSON string
-func (s *Service) ToJSON() string {
-	data, _ := json.Marshal(s)
-	return string(data)
 }
 
 // AvgTime will return the average amount of time for a service to response back successfully
@@ -374,7 +378,7 @@ func (s *Service) Update(restart bool) error {
 	if !s.AllowNotifications.Bool {
 		for _, n := range CoreApp.Notifications {
 			notif := n.(notifier.Notifier).Select()
-			notif.ResetUniqueQueue(s.Id)
+			notif.ResetUniqueQueue(fmt.Sprintf("service_%v", s.Id))
 		}
 	}
 	if restart {

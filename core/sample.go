@@ -19,8 +19,12 @@ import (
 	"fmt"
 	"github.com/hunterlong/statping/types"
 	"github.com/hunterlong/statping/utils"
-	"math/rand"
 	"time"
+)
+
+var (
+	sampleStart = time.Now().Add((-24 * 7) * time.Hour).UTC()
+	SampleHits  = 9900.
 )
 
 // InsertSampleData will create the example/dummy services for a brand new Statping installation
@@ -39,6 +43,7 @@ func InsertSampleData() error {
 		Timeout:        10,
 		Order:          1,
 		GroupId:        1,
+		Permalink:      types.NewNullString("google"),
 		CreatedAt:      createdOn,
 	})
 	s2 := ReturnService(&types.Service{
@@ -50,6 +55,7 @@ func InsertSampleData() error {
 		Method:         "GET",
 		Timeout:        20,
 		Order:          2,
+		Permalink:      types.NewNullString("statping_github"),
 		CreatedAt:      createdOn,
 	})
 	s3 := ReturnService(&types.Service{
@@ -110,13 +116,21 @@ func insertSampleGroups() error {
 	group1 := &Group{&types.Group{
 		Name:   "Main Services",
 		Public: types.NewNullBool(true),
+		Order:  2,
 	}}
 	_, err := group1.Create()
 	group2 := &Group{&types.Group{
 		Name:   "Linked Services",
 		Public: types.NewNullBool(false),
+		Order:  1,
 	}}
 	_, err = group2.Create()
+	group3 := &Group{&types.Group{
+		Name:   "Empty Group",
+		Public: types.NewNullBool(false),
+		Order:  3,
+	}}
+	_, err = group3.Create()
 	return err
 }
 
@@ -153,26 +167,31 @@ func insertSampleCheckins() error {
 
 // InsertSampleHits will create a couple new hits for the sample services
 func InsertSampleHits() error {
-	since := time.Now().Add((-24 * 7) * time.Hour).UTC()
-	for i := int64(1); i <= 5; i++ {
-		service := SelectService(i)
-		utils.Log(1, fmt.Sprintf("Adding %v sample hit records to service %v", 360, service.Name))
-		createdAt := since
-		alpha := float64(1.05)
 
-		for hi := int64(1); hi <= 168; hi++ {
-			alpha += 0.01
-			rand.Seed(time.Now().UnixNano())
-			latency := rand.Float64() * alpha
-			createdAt = createdAt.Add(1 * time.Hour)
+	for i := int64(1); i <= 5; i++ {
+
+		service := SelectService(i)
+		seed := time.Now().UnixNano()
+
+		utils.Log(1, fmt.Sprintf("Adding %v sample hit records to service %v", SampleHits, service.Name))
+		createdAt := sampleStart
+
+		p := utils.NewPerlin(2., 2., 10, seed)
+
+		for hi := 0.; hi <= float64(SampleHits); hi++ {
+
+			latency := p.Noise1D(hi / 500)
+			createdAt = createdAt.Add(60 * time.Second)
 			hit := &types.Hit{
 				Service:   service.Id,
 				CreatedAt: createdAt,
 				Latency:   latency,
 			}
 			service.CreateHit(hit)
+
 		}
 	}
+
 	return nil
 }
 
@@ -387,7 +406,7 @@ func InsertLargeSampleData() error {
 
 	var dayAgo = time.Now().Add((-24 * 90) * time.Hour)
 
-	insertHitRecords(dayAgo, 1450)
+	insertHitRecords(dayAgo, 5450)
 
 	insertFailureRecords(dayAgo, 730)
 
@@ -421,10 +440,9 @@ func insertHitRecords(since time.Time, amount int64) {
 		service := SelectService(i)
 		utils.Log(1, fmt.Sprintf("Adding %v hit records to service %v", amount, service.Name))
 		createdAt := since
-
+		p := utils.NewPerlin(2, 2, 5, time.Now().UnixNano())
 		for hi := int64(1); hi <= amount; hi++ {
-			rand.Seed(time.Now().UnixNano())
-			latency := rand.Float64()
+			latency := p.Noise1D(float64(hi / 10))
 			createdAt = createdAt.Add(1 * time.Minute)
 			hit := &types.Hit{
 				Service:   service.Id,

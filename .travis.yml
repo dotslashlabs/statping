@@ -2,10 +2,7 @@ os:
   - linux
 
 language: go
-
-go:
-  - "1.11.1"
-
+go: 1.12.x
 go_import_path: github.com/hunterlong/statping
 
 cache:
@@ -68,3 +65,10 @@ script:
 
 after_success:
   - if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_PULL_REQUEST" = "false" ]]; then make travis-build; fi
+
+webhooks:
+  urls:
+    - $GITTER
+  on_success: change
+  on_failure: always
+  on_start: never

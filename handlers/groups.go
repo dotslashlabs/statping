@@ -26,38 +26,24 @@ import (
 
 // apiAllGroupHandler will show all the groups
 func apiAllGroupHandler(w http.ResponseWriter, r *http.Request) {
-	if !IsReadAuthenticated(r) {
-		sendUnauthorizedJson(w, r)
-		return
-	}
 	auth := IsUser(r)
 	groups := core.SelectGroups(false, auth)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(groups)
+	returnJson(groups, w, r)
 }
 
 // apiGroupHandler will show a single group
 func apiGroupHandler(w http.ResponseWriter, r *http.Request) {
-	if !IsReadAuthenticated(r) {
-		sendUnauthorizedJson(w, r)
-		return
-	}
 	vars := mux.Vars(r)
 	group := core.SelectGroup(utils.ToInt(vars["id"]))
 	if group == nil {
 		sendErrorJson(errors.New("group not found"), w, r)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(group)
+	returnJson(group, w, r)
 }
 
 // apiCreateGroupHandler accepts a POST method to create new groups
 func apiCreateGroupHandler(w http.ResponseWriter, r *http.Request) {
-	if !IsFullAuthenticated(r) {
-		sendUnauthorizedJson(w, r)
-		return
-	}
 	var group *core.Group
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&group)
@@ -75,10 +61,6 @@ func apiCreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 
 // apiGroupDeleteHandler accepts a DELETE method to delete groups
 func apiGroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	if !IsFullAuthenticated(r) {
-		sendUnauthorizedJson(w, r)
-		return
-	}
 	vars := mux.Vars(r)
 	group := core.SelectGroup(utils.ToInt(vars["id"]))
 	if group == nil {
@@ -91,4 +73,22 @@ func apiGroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sendJsonAction(group, "delete", w, r)
+}
+
+type groupOrder struct {
+	Id    int64 `json:"group"`
+	Order int   `json:"order"`
+}
+
+func apiGroupReorderHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var newOrder []*groupOrder
+	decoder := json.NewDecoder(r.Body)
+	decoder.Decode(&newOrder)
+	for _, g := range newOrder {
+		group := core.SelectGroup(g.Id)
+		group.Order = g.Order
+		group.Update()
+	}
+	returnJson(newOrder, w, r)
 }

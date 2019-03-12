@@ -41,8 +41,6 @@ func catchCLI(args []string) error {
 	loadDotEnvs()
 
 	switch args[0] {
-	case "app":
-		handlers.DesktopInit(ipAddress, port)
 	case "version":
 		if COMMIT != "" {
 			fmt.Printf("Statping v%v (%v)\n", VERSION, COMMIT)
@@ -226,8 +224,7 @@ func HelpEcho() {
 	fmt.Println("     DB_PASS                   - Database password")
 	fmt.Println("     DB_PORT                   - Database port (5432, 3306, ...)")
 	fmt.Println("     DB_DATABASE               - Database connection's database name")
-	fmt.Println("     POSTGRES_SSL              - Enable Postgres SSL Mode 'ssl_mode=enabled' (true/false)")
-	fmt.Println("     POSTGRES_SSLMODE          - Set Postgres SSL Mode to supplied value")
+	fmt.Println("     POSTGRES_SSLMODE          - Enable Postgres SSL Mode 'ssl_mode=VALUE' (enable/disable/verify-full/verify-ca)")
 	fmt.Println("     GO_ENV                    - Run Statping in testmode, will bypass HTTP authentication (if set as 'true')")
 	fmt.Println("     NAME                      - Set a name for the Statping status page")
 	fmt.Println("     DESCRIPTION               - Set a description for the Statping status page")

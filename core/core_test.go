@@ -19,6 +19,7 @@ import (
 	"github.com/hunterlong/statping/source"
 	"github.com/hunterlong/statping/utils"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -32,6 +33,7 @@ func init() {
 	utils.InitLogs()
 	source.Assets()
 	skipNewDb = false
+	SampleHits = 480
 }
 
 func TestNewCore(t *testing.T) {
@@ -120,4 +122,28 @@ func TestInsertNotifierDB(t *testing.T) {
 	}
 	err := InsertNotifierDB()
 	assert.Nil(t, err)
+}
+
+func TestEnvToConfig(t *testing.T) {
+	os.Setenv("DB_CONN", "sqlite")
+	os.Setenv("DB_USER", "")
+	os.Setenv("DB_PASS", "")
+	os.Setenv("DB_DATABASE", "")
+	os.Setenv("NAME", "Testing")
+	os.Setenv("DOMAIN", "http://localhost:8080")
+	os.Setenv("DESCRIPTION", "Testing Statping")
+	os.Setenv("ADMIN_USER", "admin")
+	os.Setenv("ADMIN_PASS", "admin123")
+	config, err := EnvToConfig()
+	assert.Nil(t, err)
+	assert.Equal(t, config.DbConn, "sqlite")
+	assert.Equal(t, config.Domain, "http://localhost:8080")
+	assert.Equal(t, config.Description, "Testing Statping")
+	assert.Equal(t, config.Username, "admin")
+	assert.Equal(t, config.Password, "admin123")
+}
+
+func TestGetLocalIP(t *testing.T) {
+	ip := GetLocalIP()
+	assert.Contains(t, ip, "http://")
 }

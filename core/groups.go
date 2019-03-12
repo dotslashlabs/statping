@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/hunterlong/statping/types"
+	"sort"
 	"time"
 )
 
@@ -15,10 +16,7 @@ func (g *Group) Delete() error {
 		s.GroupId = 0
 		s.Update(false)
 	}
-	err := messagesDb().Delete(g)
-	if err.Error != nil {
-		return err.Error
-	}
+	err := groupsDb().Delete(g)
 	return err.Error
 }
 
@@ -26,6 +24,13 @@ func (g *Group) Delete() error {
 func (g *Group) Create() (int64, error) {
 	g.CreatedAt = time.Now()
 	db := groupsDb().Create(g)
+	return g.Id, db.Error
+}
+
+// Update will update a group
+func (g *Group) Update() (int64, error) {
+	g.UpdatedAt = time.Now()
+	db := groupsDb().Update(g)
 	return g.Id, db.Error
 }
 
@@ -44,7 +49,7 @@ func (g *Group) Services() []*Service {
 func SelectGroups(includeAll bool, auth bool) []*Group {
 	var groups []*Group
 	var validGroups []*Group
-	groupsDb().Find(&groups).Order("id desc")
+	groupsDb().Find(&groups).Order("order_id desc")
 	if includeAll {
 		emptyGroup := &Group{&types.Group{Id: 0, Public: types.NewNullBool(true)}}
 		groups = append(groups, emptyGroup)
@@ -58,15 +63,24 @@ func SelectGroups(includeAll bool, auth bool) []*Group {
 			validGroups = append(validGroups, g)
 		}
 	}
+	sort.Sort(GroupOrder(validGroups))
 	return validGroups
 }
 
 // SelectGroup returns a *core.Group
 func SelectGroup(id int64) *Group {
-	for _, g := range SelectGroups(false, false) {
+	for _, g := range SelectGroups(true, true) {
 		if g.Id == id {
 			return g
 		}
 	}
 	return nil
 }
+
+// GroupOrder will reorder the groups based on 'order_id' (Order)
+type GroupOrder []*Group
+
+// Sort interface for resorting the Groups in order
+func (c GroupOrder) Len() int           { return len(c) }
+func (c GroupOrder) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+func (c GroupOrder) Less(i, j int) bool { return c[i].Order < c[j].Order }

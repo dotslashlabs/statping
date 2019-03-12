@@ -34,6 +34,13 @@ const (
 	slackText       = `{"text":"{{.}}"}`
 )
 
+func init() {
+	err := notifier.AddNotifier(slacker)
+	if err != nil {
+		panic(err)
+	}
+}
+
 type slack struct {
 	*notifier.Notification
 }
@@ -64,7 +71,7 @@ func parseSlackMessage(id int64, temp string, data interface{}) error {
 	if err != nil {
 		return err
 	}
-	slacker.AddQueue(id, buf.String())
+	slacker.AddQueue(fmt.Sprintf("service_%v", id), buf.String())
 	return nil
 }
 
@@ -72,14 +79,6 @@ type slackMessage struct {
 	Service  *types.Service
 	Template string
 	Time     int64
-}
-
-// DEFINE YOUR NOTIFICATION HERE.
-func init() {
-	err := notifier.AddNotifier(slacker)
-	if err != nil {
-		panic(err)
-	}
 }
 
 // Send will send a HTTP Post to the slack webhooker API. It accepts type: string
@@ -115,7 +114,7 @@ func (u *slack) OnFailure(s *types.Service, f *types.Failure) {
 // OnSuccess will trigger successful service
 func (u *slack) OnSuccess(s *types.Service) {
 	if !u.Online {
-		u.ResetUniqueQueue(s.Id)
+		u.ResetUniqueQueue(fmt.Sprintf("service_%v", s.Id))
 		message := slackMessage{
 			Service:  s,
 			Template: successTemplate,
@@ -129,6 +128,6 @@ func (u *slack) OnSuccess(s *types.Service) {
 // OnSave triggers when this notifier has been saved
 func (u *slack) OnSave() error {
 	message := fmt.Sprintf("Notification %v is receiving updated information.", u.Method)
-	u.AddQueue(0, message)
+	u.AddQueue("saved", message)
 	return nil
 }

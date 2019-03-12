@@ -20,16 +20,21 @@ func TestServiceRoutes(t *testing.T) {
 			Method:           "GET",
 			ExpectedStatus:   200,
 			ExpectedContains: []string{`<title>Statping Github Status</title>`},
-		}}
+		}, {
+			Name:           "chart.js index file",
+			URL:            "/charts.js",
+			Method:         "GET",
+			ExpectedStatus: 200,
+		},
+	}
 
 	for _, v := range tests {
 		t.Run(v.Name, func(t *testing.T) {
-			body, t, err := RunHTTPTest(v, t)
+			_, t, err := RunHTTPTest(v, t)
 			assert.Nil(t, err)
 			if err != nil {
 				t.FailNow()
 			}
-			t.Logf("Test %v got: %v\n", v.Name, string(body))
 		})
 	}
 }

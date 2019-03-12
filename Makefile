@@ -90,7 +90,7 @@ test: clean compile install build-plugin
 
 test-api:
 	DB_CONN=sqlite DB_HOST=localhost DB_DATABASE=sqlite DB_PASS=none DB_USER=none statping &
-	sleep 15 && newman run source/tmpl/postman.json -e dev/postman_environment.json --delay-request 500
+	sleep 300 && newman run source/tmpl/postman.json -e dev/postman_environment.json --delay-request 500
 
 # report coverage to Coveralls
 coverage:
@@ -98,15 +98,18 @@ coverage:
 
 # generate documentation for Statping functions
 docs:
-	godoc2md -ex github.com/hunterlong/statping >> dev/README.md
-	godoc2md -ex github.com/hunterlong/statping/cmd >> dev/README.md
-	godoc2md -ex github.com/hunterlong/statping/core > dev/README.md
-	godoc2md -ex github.com/hunterlong/statping/handlers >> dev/README.md
-	godoc2md -ex github.com/hunterlong/statping/notifiers >> dev/README.md
-	godoc2md -ex github.com/hunterlong/statping/plugin >> dev/README.md
-	godoc2md -ex github.com/hunterlong/statping/source >> dev/README.md
-	godoc2md -ex github.com/hunterlong/statping/types >> dev/README.md
-	godoc2md -ex github.com/hunterlong/statping/utils >> dev/README.md
+	rm -f dev/README.md
+	printf "# Statping Dev Documentation\n" > dev/README.md
+	printf "This readme is automatically generated from the Golang documentation. [![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://godoc.org/github.com/hunterlong/statping)\n\n" > dev/README.md
+	godocdown github.com/hunterlong/statping >> dev/README.md
+	godocdown github.com/hunterlong/statping/cmd >> dev/README.md
+	godocdown github.com/hunterlong/statping/core >> dev/README.md
+	godocdown github.com/hunterlong/statping/handlers >> dev/README.md
+	godocdown github.com/hunterlong/statping/notifiers >> dev/README.md
+	godocdown github.com/hunterlong/statping/plugin >> dev/README.md
+	godocdown github.com/hunterlong/statping/source >> dev/README.md
+	godocdown github.com/hunterlong/statping/types >> dev/README.md
+	godocdown github.com/hunterlong/statping/utils >> dev/README.md
 	gocov-html coverage.json > dev/COVERAGE.html
 	revive -formatter stylish > dev/LINT.md
 
@@ -215,6 +218,7 @@ dev-deps:
 	$(GOGET) github.com/mattn/goveralls
 	$(GOINSTALL) github.com/mattn/goveralls
 	$(GOGET) github.com/rendon/testcli
+	$(GOGET) github.com/robertkrimen/godocdown/godocdown
 	$(GOGET) github.com/karalabe/xgo
 	$(GOGET) github.com/GeertJohan/go.rice
 	$(GOGET) github.com/GeertJohan/go.rice/rice
@@ -231,7 +235,7 @@ dev-deps:
 # remove files for a clean compile/build
 clean:
 	rm -rf ./{logs,assets,plugins,statup.db,config.yml,.sass-cache,config.yml,statping,build,.sass-cache,statup.db,index.html,vendor}
-	rm -rf cmd/{logs,assets,plugins,statup.db,config.yml,.sass-cache,*.log}
+	rm -rf cmd/{logs,assets,plugins,statup.db,config.yml,.sass-cache,*.log,*.html,*.json}
 	rm -rf core/{logs,assets,plugins,statup.db,config.yml,.sass-cache,*.log}
 	rm -rf handlers/{logs,assets,plugins,statup.db,config.yml,.sass-cache,*.log}
 	rm -rf notifiers/{logs,assets,plugins,statup.db,config.yml,.sass-cache,*.log}
