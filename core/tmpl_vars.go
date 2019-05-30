@@ -51,6 +51,14 @@ func GetTemplateFuncMap() *template.FuncMap {
 			dateFmt, loc := resolveTimeArgs(layout, timezone)
 			return time.Now().In(loc).Format(dateFmt)
 		},
+		"today_mins_ago": func(minsAgo int, layout string, timezone string) string {
+			dateFmt, loc := resolveTimeArgs(layout, timezone)
+			t := time.Now().In(loc)
+			if minsAgo <= 0 {
+				return t.Format(dateFmt)
+			}
+			return t.Add(time.Duration(-minsAgo) * time.Minute).Format(dateFmt)
+		},
 		"yesterday_date": func() string {
 			return time.Now().AddDate(0, 0, -1).Format(defaultDateFormat)
 		},
