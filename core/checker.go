@@ -194,20 +194,30 @@ func (s *Service) checkHttp(record bool) *Service {
 	t1 := time.Now()
 
 	timeout := time.Duration(s.Timeout) * time.Second
+	templateFuncMap := GetTemplateFuncMap()
+
 	var content []byte
 	var res *http.Response
 
 	var headers []string
 	if s.Headers.Valid {
 		headers = strings.Split(s.Headers.String, ",")
+
+		for i := range headers {
+			headers[i] = ReplaceTemplateVars(headers[i], templateFuncMap)
+		}
 	} else {
 		headers = nil
 	}
 
+	domain := ReplaceTemplateVars(s.Domain, templateFuncMap)
+	utils.Log(1, fmt.Sprintf("Domain: %v", domain))
+
 	if s.Method == "POST" {
-		content, res, err = utils.HttpRequest(s.Domain, s.Method, "application/json", headers, bytes.NewBuffer([]byte(s.PostData.String)), timeout)
+		postData := ReplaceTemplateVars(s.PostData.String, templateFuncMap)
+		content, res, err = utils.HttpRequest(domain, s.Method, "application/json", headers, bytes.NewBuffer([]byte(postData)), timeout)
 	} else {
-		content, res, err = utils.HttpRequest(s.Domain, s.Method, nil, headers, nil, timeout)
+		content, res, err = utils.HttpRequest(domain, s.Method, nil, headers, nil, timeout)
 	}
 	if err != nil {
 		if record {
@@ -221,13 +231,14 @@ func (s *Service) checkHttp(record bool) *Service {
 	s.LastStatusCode = res.StatusCode
 
 	if s.Expected.String != "" {
-		match, err := regexp.MatchString(s.Expected.String, string(content))
+		expectedResponse := ReplaceTemplateVars(s.Expected.String, templateFuncMap)
+		match, err := regexp.MatchString(expectedResponse, string(content))
 		if err != nil {
-			utils.Log(2, fmt.Sprintf("Service %v expected: %v to match %v", s.Name, string(content), s.Expected.String))
+			utils.Log(2, fmt.Sprintf("Service %v expected: %v to match %v", s.Name, string(content), expectedResponse))
 		}
 		if !match {
 			if record {
-				recordFailure(s, fmt.Sprintf("HTTP Response Body did not match '%v'", s.Expected))
+				recordFailure(s, fmt.Sprintf("HTTP Response Body did not match '%v'", expectedResponse))
 			}
 			return s
 		}
