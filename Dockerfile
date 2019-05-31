@@ -22,7 +22,7 @@ ARG VERSION
 ENV IS_DOCKER=true
 ENV STATPING_DIR=/app
 ENV PORT=8080
-RUN apk --no-cache add curl jq libsass
+RUN apk --no-cache add curl jq libsass tzdata
 
 COPY --from=base /usr/local/bin/sass /usr/local/bin/sass
 COPY --from=base /go/bin/statping /usr/local/bin/statping
