@@ -17,31 +17,36 @@ package core
 
 import (
 	"bytes"
+	"fmt"
 	"text/template"
 	"time"
+
+	"github.com/hunterlong/statping/utils"
 )
+
+func resolveTimeArgs(layout string, timezone string) (string, *time.Location) {
+	if layout == "" {
+		layout = "2006-01-02"
+	}
+
+	if timezone == "" {
+		timezone = "UTC"
+	}
+
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		// user-specified location not available, fallback silently to UTC
+		utils.Log(2, fmt.Sprintf("Error setting user-specified timezone %v: %v", timezone, err))
+		loc, _ = time.LoadLocation("UTC")
+	}
+
+	utils.Log(1, fmt.Sprintf("Layout: %v, Location: %v", layout, loc))
+	return layout, loc
+}
 
 // GetTemplateFuncMap returns a function map for a template to apply.
 func GetTemplateFuncMap() *template.FuncMap {
 	defaultDateFormat := "2006-01-02"
-
-	resolveTimeArgs := func(layout string, timezone string) (string, *time.Location) {
-		if layout == "" {
-			layout = defaultDateFormat
-		}
-
-		if timezone == "" {
-			timezone = "UTC"
-		}
-
-		loc, err := time.LoadLocation(timezone)
-		if err != nil {
-			// user-specified location not available, fallback silently to UTC
-			loc, _ = time.LoadLocation("UTC")
-		}
-
-		return layout, loc
-	}
 
 	return &template.FuncMap{
 		"today_date": func() string {
@@ -55,6 +60,7 @@ func GetTemplateFuncMap() *template.FuncMap {
 			dateFmt, loc := resolveTimeArgs(layout, timezone)
 			t := time.Now().In(loc)
 			if minsAgo <= 0 {
+				utils.Log(2, fmt.Sprintf("Invalid minsAgo argument: %v", minsAgo))
 				return t.Format(dateFmt)
 			}
 			return t.Add(time.Duration(-minsAgo) * time.Minute).Format(dateFmt)
